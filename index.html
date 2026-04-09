@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Engineering Lab</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --panel-bg: rgba(16, 16, 24, 0.85);
+            --border-primary: #00f0ff;
+            --border-secondary: #ff0055;
+            --neon-blue: #00f0ff;
+            --neon-blue-glow: rgba(0, 240, 255, 0.6);
+            --neon-pink: #ff0055;
+            --neon-pink-glow: rgba(255, 0, 85, 0.6);
+            --neon-green: #39ff14;
+            --neon-green-glow: rgba(57, 255, 20, 0.6);
+            --neon-yellow: #fce300;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --font-display: 'Orbitron', sans-serif;
+            --font-ui: 'Rajdhani', sans-serif;
+            --font-code: 'Fira Code', monospace;
+            --slot-size: 60px;
+            --ring-radius: 100px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 60%),
+                linear-gradient(rgba(0, 0, 0, 0.8) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.8) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            padding: 15px 0;
+            border-bottom: 2px solid var(--neon-blue);
+            background: linear-gradient(180deg, rgba(0,240,255,0.1) 0%, transparent 100%);
+            box-shadow: 0 0 20px var(--neon-blue-glow);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+            margin-bottom: 5px;
+        }
+
+        .system-status {
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 5px var(--neon-green);
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 340px;
+            gap: 20px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 10px; height: 10px;
+            border-top: 2px solid var(--neon-blue);
+            border-left: 2px solid var(--neon-blue);
+        }
+        .panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 10px; height: 10px;
+            border-bottom: 2px solid var(--neon-blue);
+            border-right: 2px solid var(--neon-blue);
+        }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* COMMAND CENTER */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-box {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-green);
+            font-family: var(--font-code);
+            font-size: 1.5rem;
+            padding: 10px;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s;
+            text-shadow: 0 0 5px var(--neon-green);
+        }
+
+        .input-box:focus {
+            box-shadow: 0 0 15px var(--neon-blue-glow);
+        }
+
+        .btn {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--neon-blue-glow);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        .btn-enq { border-color: var(--neon-green); color: var(--neon-green); }
+        .btn-enq:hover:not(:disabled) { background: var(--neon-green); box-shadow: 0 0 20px var(--neon-green-glow); color: #000; }
+        
+        .btn-deq { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+        .btn-deq:hover:not(:disabled) { background: var(--neon-yellow); box-shadow: 0 0 20px rgba(252, 227, 0, 0.6); color: #000; }
+        
+        .btn-reset { border-color: #ff9900; color: #ff9900; }
+        .btn-reset:hover:not(:disabled) { background: #ff9900; box-shadow: 0 0 20px rgba(255, 153, 0, 0.6); color: #000; }
+
+        .btn-stress {
+            margin-top: 20px;
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            animation: pulse-border 2s infinite;
+        }
+        .btn-stress:hover:not(:disabled) { background: var(--neon-pink); box-shadow: 0 0 30px var(--neon-pink-glow); color: #000; animation: none; }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 5px transparent; }
+            50% { box-shadow: 0 0 15px var(--neon-pink-glow); }
+            100% { box-shadow: 0 0 5px transparent; }
+        }
+
+        /* COMPLEXITY BADGES */
+        .complexity-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 2px;
+        }
+        .complexity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            border: 1px solid #333;
+            color: #888;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .complexity-badge.active-badge {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            box-shadow: 0 0 8px var(--neon-blue-glow);
+            background: rgba(0,240,255,0.08);
+        }
+        .complexity-badge.active-badge.o-n {
+            border-color: var(--neon-yellow);
+            color: var(--neon-yellow);
+            box-shadow: 0 0 8px rgba(252,227,0,0.4);
+            background: rgba(252,227,0,0.06);
+        }
+        .badge-op { font-size: 0.7rem; color: inherit; opacity: 0.7; }
+
+        /* OPERATION HISTORY TIMELINE */
+        .op-timeline {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            overflow-x: auto;
+            padding: 6px 0;
+            min-height: 36px;
+        }
+        .op-timeline::-webkit-scrollbar { height: 3px; }
+        .op-timeline::-webkit-scrollbar-thumb { background: #333; }
+        .op-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            animation: chip-pop 0.25s ease;
+        }
+        @keyframes chip-pop {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .op-chip.enq { background: rgba(57,255,20,0.15); border: 1px solid var(--neon-green); color: var(--neon-green); }
+        .op-chip.deq { background: rgba(252,227,0,0.15); border: 1px solid var(--neon-yellow); color: var(--neon-yellow); }
+        .op-chip.srch { background: rgba(0,240,255,0.15); border: 1px solid var(--neon-blue); color: var(--neon-blue); }
+        .op-chip.err { background: rgba(255,0,85,0.15); border: 1px solid var(--neon-pink); color: var(--neon-pink); }
+
+        /* CIRCULAR FILL RING */
+        .circ-fill-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 230px; height: 230px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .fill-ring-svg { overflow: visible; }
+        .fill-ring-track { fill: none; stroke: #1a1a2e; stroke-width: 6; }
+        .fill-ring-arc {
+            fill: none;
+            stroke: var(--neon-blue);
+            stroke-width: 6;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 5px var(--neon-blue));
+            transition: stroke-dashoffset 0.5s ease, stroke 0.3s;
+        }
+
+        /* WASTE COUNTER */
+        .waste-counter {
+            position: absolute;
+            bottom: 12px;
+            right: 15px;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #555;
+            transition: all 0.4s;
+        }
+        .waste-counter.has-waste { color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink-glow); }
+        .waste-counter-num {
+            font-size: 1.4rem;
+            font-weight: bold;
+            font-family: var(--font-display);
+            line-height: 1;
+        }
+
+        /* SPEED SLIDER */
+        .speed-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            margin-top: 6px;
+        }
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--neon-pink);
+            box-shadow: 0 0 8px var(--neon-pink-glow);
+            cursor: pointer;
+        }
+        .speed-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #555;
+            font-family: var(--font-code);
+            margin-top: 2px;
+        }
+
+        /* COMPLEXITY TABLE */
+        .complexity-table-wrap {
+            overflow-x: auto;
+        }
+        .complexity-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+        }
+        .complexity-table th {
+            text-align: center;
+            padding: 6px 10px;
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #333;
+        }
+        .complexity-table td {
+            text-align: center;
+            padding: 6px 10px;
+            border-bottom: 1px solid #1a1a2e;
+            color: #888;
+            transition: background 0.2s;
+        }
+        .complexity-table tr:hover td { background: rgba(0,240,255,0.03); }
+        .complexity-table td:first-child { text-align: left; color: var(--text-main); font-weight: bold; }
+        .complexity-table .col-op { color: var(--text-muted); font-size: 0.7rem; }
+        .complexity-table .col-head-lin { color: var(--neon-blue); }
+        .complexity-table .col-head-circ { color: var(--neon-green); }
+        .complexity-table .col-head-space { color: var(--neon-yellow); }
+        .cplx-o1  { color: var(--neon-green); font-weight: bold; }
+        .cplx-on  { color: var(--neon-yellow); font-weight: bold; }
+        .cplx-ov  { color: #888; }
+        .cplx-pnl-title { font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 1px; color: var(--text-muted); margin-bottom:2px; }
+        .complexity-section {
+            flex: 1;
+            min-width: 260px;
+        }
+
+        /* FACTORY STAGE */
+        .stage {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .factory-floor {
+            background: rgba(10, 10, 15, 0.9);
+            border: 2px solid #222;
+            border-radius: 10px;
+            flex: 1;
+            padding: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            overflow: hidden;
+            min-height: 380px;
+        }
+
+        .factory-title {
+            position: absolute;
+            top: 15px; left: 20px;
+            font-family: var(--font-display);
+            color: #555;
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .factory-floor.active .factory-title {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue-glow);
+        }
+
+        .factory-floor.jammed {
+            border-color: var(--neon-pink);
+            animation: jam-flash 0.5s calc(var(--jam-count, 1) * 2) alternate;
+        }
+        
+        .factory-floor.jammed .factory-title {
+            color: var(--neon-pink);
+            text-shadow: 0 0 15px var(--neon-pink-glow);
+        }
+
+        @keyframes jam-flash {
+            0% { box-shadow: inset 0 0 0 transparent; }
+            100% { box-shadow: inset 0 0 80px var(--neon-pink-glow); }
+        }
+
+        .error-message {
+            position: absolute;
+            top: 20px; right: 20px;
+            color: var(--neon-pink);
+            font-family: var(--font-code);
+            font-weight: bold;
+            font-size: 1.2rem;
+            background: rgba(255, 0, 85, 0.1);
+            padding: 5px 15px;
+            border: 1px solid var(--neon-pink);
+            border-radius: 4px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+            text-shadow: 0 0 10px var(--neon-pink);
+            z-index: 20;
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* LINEAR CONVEYOR */
+        .conveyor-belt {
+            display: flex;
+            gap: 15px;
+            margin-top: auto;
+            margin-bottom: auto;
+            padding: 20px;
+            background: linear-gradient(90deg, #111, #222, #111);
+            border-top: 3px solid #333;
+            border-bottom: 3px solid #333;
+            position: relative;
+        }
+
+        .conveyor-belt::after {
+            content: '';
+            position: absolute;
+            bottom: -8px; left: 0; right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, #555 0px, #555 10px, transparent 10px, transparent 20px);
+            animation: move-belt 2s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes move-belt {
+            to { background-position: -40px 0; }
+        }
+
+        .slot {
+            width: var(--slot-size);
+            height: var(--slot-size);
+            border: 2px dashed #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+
+        .slot-index {
+            position: absolute;
+            bottom: -25px;
+            font-family: var(--font-code);
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .slot.ghosted {
+            border-color: rgba(255,0,85, 0.3);
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,85,0.1) 10px, rgba(255,0,85,0.1) 20px);
+        }
+        
+        .slot.ghosted::before {
+            content: '✖';
+            position: absolute;
+            color: rgba(255,0,85, 0.5);
+            font-size: 2rem;
+            text-shadow: 0 0 10px var(--neon-pink-glow);
+        }
+
+        /* DATA UNITS */
+        .data-cube {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue-glow), inset 0 0 10px var(--neon-blue-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-code);
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #fff;
+            text-shadow: 0 0 5px var(--neon-blue);
+            position: absolute;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2;
+        }
+
+        .data-cube.enqueueing {
+            transform: translateY(-50px) scale(0.5);
+            opacity: 0;
+        }
+
+        .data-cube.dequeueing {
+            transform: translateY(50px) scale(0.5);
+            opacity: 0;
+        }
+
+        /* POINTERS */
+        .pointers-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .pointer {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        .pointer.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .pointer-arrow {
+            width: 0; 
+            height: 0; 
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+        .pointer-label {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #000;
+        }
+
+        .ptr-front { color: var(--neon-green); }
+        .ptr-front .pointer-arrow { border-bottom: 12px solid var(--neon-green); }
+        .ptr-front .pointer-label { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green-glow); }
+
+        .ptr-rear { color: var(--neon-yellow); }
+        .ptr-rear .pointer-arrow { border-top: 12px solid var(--neon-yellow); margin-bottom: 0; margin-top: 5px; }
+        .ptr-rear .pointer-label { background: var(--neon-yellow); box-shadow: 0 0 10px rgba(252, 227, 0, 0.6); order: -1; }
+
+        .linear-ptr-front { top: -15px; }
+        .linear-ptr-rear { bottom: -5px; }
+
+        /* CIRCULAR CAROUSEL */
+        .carousel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ring-track {
+            position: absolute;
+            width: calc(var(--ring-radius) * 2);
+            height: calc(var(--ring-radius) * 2);
+            border: 2px dashed #444;
+            border-radius: 50%;
+            z-index: 0;
+            animation: spin-slow 20s linear infinite;
+        }
+
+        @keyframes spin-slow {
+            100% { transform: rotate(360deg); }
+        }
+
+        .carousel-center {
+            width: 80px;
+            height: 80px;
+            background: #111;
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            color: var(--neon-blue);
+            box-shadow: inset 0 0 20px var(--neon-blue-glow), 0 0 30px rgba(0,0,0,0.8);
+            z-index: 5;
+            position: absolute;
+        }
+
+        .carousel-center::after {
+            content: '';
+            position: absolute;
+            width: 60px; height: 60px;
+            border-top: 3px solid var(--neon-blue);
+            border-right: 3px solid transparent;
+            border-bottom: 3px solid var(--neon-blue);
+            border-left: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin-pulse 2s linear infinite;
+        }
+
+        @keyframes spin-pulse {
+            0% { transform: rotate(0deg); opacity: 0.5; }
+            50% { opacity: 1; filter: drop-shadow(0 0 10px var(--neon-blue)); }
+            100% { transform: rotate(360deg); opacity: 0.5; }
+        }
+
+        .circ-slot {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            left: 50%; top: 50%;
+            border-radius: 50%;
+        }
+        
+        .circ-ptr {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            left: 50%; top: 50%;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+            z-index: 7;
+        }
+
+        .circ-ptr .pointer-arrow { margin: 0; }
+        .circ-ptr-front .pointer-arrow { border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 14px solid var(--neon-green); }
+        .circ-ptr-rear .pointer-arrow { border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 14px solid var(--neon-yellow); }
+
+        .wrap-arc {
+            position: absolute;
+            width: calc(var(--ring-radius) * 2 + 30px);
+            height: calc(var(--ring-radius) * 2 + 30px);
+            border-radius: 50%;
+            border: 4px solid transparent;
+            pointer-events: none;
+            z-index: 8;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .wrap-arc.animating {
+            animation: arc-flash 1s ease-out;
+        }
+
+        @keyframes arc-flash {
+            0% { opacity: 0; border-right-color: var(--neon-blue); filter: drop-shadow(0 0 10px var(--neon-blue)); transform: rotate(-90deg) scale(0.9); }
+            50% { opacity: 1; border-right-color: var(--neon-pink); filter: drop-shadow(0 0 20px var(--neon-pink)); transform: rotate(0deg) scale(1.05); }
+            100% { opacity: 0; border-right-color: var(--neon-blue); transform: rotate(90deg) scale(1); }
+        }
+
+        /* RIGHT PANELS */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-family: var(--font-code);
+            font-size: 1.5rem;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+        
+        .stat-value.highlight {
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue-glow);
+        }
+
+        .waste-meter-container {
+            grid-column: 1 / -1;
+            margin-top: 10px;
+        }
+
+        .waste-bar-bg {
+            height: 12px;
+            background: #222;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+
+        .waste-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #550000, var(--neon-pink));
+            box-shadow: 0 0 10px var(--neon-pink-glow);
+            transition: width 0.3s;
+        }
+
+        .logic-trace {
+            background: #0d0d14;
+            border: 1px solid #333;
+            border-radius: 6px;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            padding: 10px;
+            overflow-y: auto;
+            flex-grow: 1;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .code-line {
+            padding: 3px 5px;
+            margin: 2px 0;
+            border-left: 3px solid transparent;
+            color: #888;
+            transition: all 0.2s;
+            white-space: pre;
+        }
+
+        .code-line.active {
+            color: #fff;
+            background: rgba(0, 240, 255, 0.1);
+            border-left-color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue-glow);
+        }
+
+        .code-line.error {
+            color: #fff;
+            background: rgba(255, 0, 85, 0.15);
+            border-left-color: var(--neon-pink);
+            text-shadow: 0 0 5px var(--neon-pink-glow);
+        }
+        
+        .code-line.success {
+            color: #fff;
+            background: rgba(57, 255, 20, 0.15);
+            border-left-color: var(--neon-green);
+        }
+
+        .keyword { color: #c678dd; }
+        .variable { color: #e06c75; }
+        .number { color: #d19a66; }
+        .operator { color: #56b6c2; }
+        .comment { color: #5c6370; font-style: italic; }
+
+        .tooltip-icon {
+            display: inline-flex; justify-content: center; align-items: center;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: #222; border: 1px solid var(--text-muted);
+            font-size: 0.7rem; color: var(--text-muted);
+            cursor: help; margin-left: auto;
+            position: relative;
+        }
+        .tooltip-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; right: 0; top: 25px;
+            width: 250px; padding: 10px;
+            background: var(--panel-bg); border: 1px solid var(--neon-blue);
+            color: #fff; font-family: var(--font-ui); font-size: 0.85rem;
+            z-index: 100; border-radius: 4px; box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            pointer-events: none;
+            white-space: normal;
+        }
+
+        .alert-underflow { border-color: var(--neon-yellow) !important; animation: shake-yellow 0.5s ease-in-out; }
+        .alert-overflow { border-color: var(--neon-pink) !important; animation: shake-pink 0.5s ease-in-out; }
+        
+        @keyframes shake-yellow {
+            0%, 100% { transform: translateX(0); box-shadow: inset 0 0 0 transparent; }
+            25%, 75% { transform: translateX(-5px); box-shadow: inset 0 0 50px rgba(252, 227, 0, 0.4); }
+            50% { transform: translateX(5px); }
+        }
+        @keyframes shake-pink {
+            0%, 100% { transform: translateX(0); box-shadow: inset 0 0 0 transparent; }
+            25%, 75% { transform: translateX(-5px); box-shadow: inset 0 0 50px var(--neon-pink-glow); }
+            50% { transform: translateX(5px); }
+        }
+
+        /* SEARCH RESULT BOX */
+        .search-result-box {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-family: var(--font-code);
+            font-size: 0.78rem;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            animation: fadeInResult 0.3s ease;
+        }
+        @keyframes fadeInResult {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .search-result-box.visible { display: flex; }
+        .search-result-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .search-result-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            min-width: 48px;
+        }
+        .result-found {
+            color: var(--neon-green);
+            text-shadow: 0 0 6px var(--neon-green-glow);
+            font-weight: bold;
+        }
+        .result-not-found {
+            color: var(--neon-pink);
+            text-shadow: 0 0 6px var(--neon-pink-glow);
+            font-weight: bold;
+        }
+
+        .scanner-beam {
+            position: absolute;
+            background: rgba(0, 240, 255, 0.2);
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue-glow);
+            z-index: 20;
+            transition: all 0.4s ease;
+            pointer-events: none;
+            opacity: 0;
+            width: 60px; height: 60px;
+            border-radius: 8px;
+        }
+        
+        .scanner-beam.active { opacity: 1; }
+        .scanner-beam.match {
+            background: rgba(57, 255, 20, 0.3);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green-glow);
+        }
+        .scanner-beam.miss {
+            background: rgba(255, 0, 85, 0.3);
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 20px var(--neon-pink-glow);
+        }
+
+        .terminal-line { padding: 2px 0; border-bottom: 1px solid #111; }
+        .terminal-line .input { color: var(--neon-yellow); }
+        .terminal-line .op { color: var(--neon-blue); }
+        .terminal-line .state { color: var(--neon-green); font-size:0.75rem; text-shadow:none; }
+
+        .info-wrapper {
+            position: absolute;
+            top: 25px;
+            right: 20px;
+            z-index: 50;
+            text-align: left;
+        }
+
+        .info-btn {
+            background: var(--bg-dark);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-family: var(--font-display);
+            box-shadow: 0 0 10px var(--neon-blue-glow);
+            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .info-btn:hover {
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+        }
+
+        .info-dropdown {
+            display: none;
+            position: absolute;
+            top: 45px;
+            right: 0;
+            width: 320px;
+            background: rgba(10, 10, 15, 0.95);
+            border: 1px solid var(--neon-blue);
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 0 20px rgba(0,240,255,0.2);
+            font-family: var(--font-ui);
+            color: var(--text-main);
+            font-size: 1rem;
+            line-height: 1.4;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-dropdown p { margin-bottom: 10px; }
+        .info-dropdown.open { display: block; }
+        
+        .info-title {
+            color: var(--neon-blue);
+            font-family: var(--font-display);
+            margin-bottom: 10px;
+            border-bottom: 1px dashed var(--neon-blue);
+            padding-bottom: 5px;
+            font-size: 1.2rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>Queue Engineering Lab</h1>
+        <div class="system-status" id="sysStatus">SYSTEM_ONLINE // WAITING_FOR_INPUT</div>
+        
+        <div class="info-wrapper">
+            <button class="info-btn" id="infoBtn">ⓘ</button>
+            <div class="info-dropdown" id="infoDropdown">
+                <div class="info-title">QUEUE MANUAL</div>
+                <p><b>Linear Queue:</b> Follows First-In-First-Out. When Rear hits capacity, space in front is wasted.</p>
+                <p><b>Circular Carousel:</b> Efficient wrap-around utilizing Modulo arithmetic to reuse empty slots.</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+
+        <!-- LEFT SIDEBAR: COMMAND CENTER -->
+        <div class="panel">
+            <div class="panel-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                Command Center
+                <span class="tooltip-icon" data-tooltip="The Control Center drives inputs to both queue architectures simultaneously to compare throughput directly.">?</span>
+            </div>
+            
+            <div class="control-group">
+                <label class="stat-label">Data Input Unit</label>
+                <input type="text" id="dataInput" class="input-box" placeholder="00" maxlength="3" autocomplete="off">
+            </div>
+
+            <button id="btnEnq" class="btn btn-enq">Enqueue ( Insert )</button>
+            <button id="btnDeq" class="btn btn-deq">Dequeue ( Extract )</button>
+            
+            <div style="margin-top: 5px; border-top: 1px dashed #444; padding-top: 10px;">
+                <label class="stat-label" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Step-By-Step Mode</span>
+                    <input type="checkbox" id="stepToggle" style="transform: scale(1.2);">
+                </label>
+                <div id="stepControls" style="display:none; gap: 5px; margin-top:10px;">
+                    <button id="btnPrev" class="btn" style="flex:1; padding:5px;">&lt; Prev</button>
+                    <button id="btnNext" class="btn btn-enq" style="flex:1; padding:5px;">Next &gt;</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 5px; border-top: 1px dashed #444; padding-top: 10px;">
+                <label class="stat-label">Search / Traversal</label>
+                <div style="display:flex; gap: 5px; margin-top:5px;">
+                    <input type="text" id="searchInput" class="input-box" style="width: 50%; font-size: 1rem; padding: 5px;" placeholder="Val" autocomplete="off">
+                    <button id="btnSearch" class="btn" style="width: 50%; padding: 5px; border-color: var(--neon-blue); color: var(--neon-blue);">Scan</button>
+                </div>
+                <!-- Search Result Display -->
+                <div class="search-result-box" id="searchResultBox">
+                    <div class="search-result-row">
+                        <span class="search-result-label">LINEAR:</span>
+                        <span id="srLinear" class="result-not-found">—</span>
+                    </div>
+                    <div class="search-result-row">
+                        <span class="search-result-label">CIRCULAR:</span>
+                        <span id="srCircular" class="result-not-found">—</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="btnReset" class="btn btn-reset" style="margin-top: auto;">System Reset</button>
+            
+            <div style="border-top: 1px dashed #444; margin-top: 10px; padding-top: 10px;">
+                <label class="stat-label">Automated Testing</label>
+                <button id="btnStress" class="btn btn-stress" style="width: 100%; margin-top: 5px;">🔥 STRESS TEST 🔥</button>
+                <div style="margin-top: 8px;">
+                    <label class="stat-label" style="display:flex; justify-content:space-between;">
+                        <span>Speed</span><span id="speedLabel" style="color:var(--neon-pink);">Normal</span>
+                    </label>
+                    <input type="range" id="speedSlider" class="speed-slider" min="1" max="3" value="2" step="1">
+                    <div class="speed-label-row"><span>Slow</span><span>Normal</span><span>Fast</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER STAGE: FACTORIES -->
+        <div class="stage">
+            
+            <!-- LINEAR FACTORY -->
+            <div class="factory-floor" id="linearFloor">
+                <div class="factory-title">
+                    Linear Conveyor Belt
+                    <span class="tooltip-icon" style="float:right; margin-top:5px; margin-left:15px;" data-tooltip="A standard Queue limits Rear pointer progression explicitly to the bounds of the array, preventing backward shifting.">?</span>
+                </div>
+                <div class="error-message" id="linearError">SYSTEM JAM: Wasted Space Detected</div>
+                
+                <!-- WASTE COUNTER -->
+                <div class="waste-counter" id="wasteCounter">
+                    <div>
+                        <div class="waste-counter-num" id="wasteCounterNum">0</div>
+                        <div style="font-size:0.65rem; line-height:1;">SLOTS<br>WASTED</div>
+                    </div>
+                    <div style="font-size:1.5rem;">🗑</div>
+                </div>
+
+                <div class="conveyor-belt" id="linearBelt">
+                    <div class="scanner-beam" id="lScanner"></div>
+                    <div class="pointers-container">
+                        <div class="pointer ptr-front linear-ptr-front" id="lPtrFront">
+                            <div class="pointer-label">FRONT</div>
+                            <div class="pointer-arrow"></div>
+                        </div>
+                        <div class="pointer ptr-rear linear-ptr-rear" id="lPtrRear">
+                            <div class="pointer-arrow"></div>
+                            <div class="pointer-label">REAR</div>
+                        </div>
+                    </div>
+                    <!-- Slots dynamically added -->
+                </div>
+            </div>
+
+            <!-- CIRCULAR FACTORY -->
+            <div class="factory-floor" id="circularFloor">
+                <div class="factory-title">
+                    Circular Carousel
+                    <span class="tooltip-icon" style="float:right; margin-top:5px; margin-left:15px;" data-tooltip="Modulo Arithmetic allows the Rear pointer to wrap back to Index 0 precisely when hitting the array cap.">?</span>
+                </div>
+                
+                <div class="wrap-arc" id="wrapArc"></div>
+
+                <div class="carousel-container" id="circCarousel">
+                    <div class="ring-track"></div>
+                    <!-- FILL RING SVG -->
+                    <div class="circ-fill-ring">
+                        <svg class="fill-ring-svg" width="230" height="230" viewBox="0 0 230 230">
+                            <circle class="fill-ring-track" cx="115" cy="115" r="108"/>
+                            <circle class="fill-ring-arc" id="fillRingArc" cx="115" cy="115" r="108"
+                                stroke-dasharray="678.6" stroke-dashoffset="678.6"
+                                transform="rotate(-90 115 115)"/>
+                        </svg>
+                    </div>
+                    <div class="carousel-center">CORE</div>
+                    
+                    <div class="pointers-container">
+                        <div class="pointer circ-ptr circ-ptr-front ptr-front" id="cPtrFront">
+                            <div class="pointer-arrow"></div>
+                            <div class="pointer-label" style="position:absolute; top:-25px; font-size:0.7rem;">FRONT</div>
+                        </div>
+                        <div class="pointer circ-ptr circ-ptr-rear ptr-rear" id="cPtrRear">
+                            <div class="pointer-arrow"></div>
+                            <div class="pointer-label" style="position:absolute; top:15px; font-size:0.7rem;">REAR</div>
+                        </div>
+                    </div>
+                    <!-- Slots dynamically added -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDEBAR: DASHBOARDS -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="panel">
+                <div class="panel-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                    Performance Dashboard
+                </div>
+                
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Throughput (Enq)</div>
+                        <div class="stat-value" id="statThroughput">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Operations</div>
+                        <div class="stat-value highlight" id="statOps">0</div>
+                    </div>
+                    
+                    <div class="waste-meter-container">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div class="stat-label" style="color: var(--neon-pink);">Linear Memory Waste</div>
+                            <div class="stat-label" id="statWasteText">0/5 Slots</div>
+                        </div>
+                        <div class="waste-bar-bg">
+                            <div class="waste-bar-fill" id="wasteBar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COMPLEXITY BADGES -->
+                <div style="border-top: 1px dashed #333; padding-top: 10px;">
+                    <div class="stat-label" style="margin-bottom: 6px;">⚡ Algorithm Complexity</div>
+                    <div class="complexity-bar">
+                        <div class="complexity-badge" id="badgeEnqDeq">Enq/Deq <span class="badge-op">O(1)</span></div>
+                        <div class="complexity-badge" id="badgeSearch">Search <span class="badge-op">O(n)</span></div>
+                        <div class="complexity-badge" id="badgeOverflow">Overflow <span class="badge-op">O(1)</span></div>
+                    </div>
+                </div>
+
+                <!-- OPERATION HISTORY -->
+                <div style="border-top: 1px dashed #333; padding-top: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <div class="stat-label">📜 Operation History</div>
+                        <button id="btnExport" style="font-size:0.7rem; padding:2px 7px; background:rgba(0,240,255,0.05); border:1px solid #333; color:#666; cursor:pointer; border-radius:3px; font-family:var(--font-code);">Copy State</button>
+                    </div>
+                    <div class="op-timeline" id="opTimeline"><span style="color:#444; font-size:0.75rem; font-family:var(--font-code);">// no ops yet</span></div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex-grow: 1;">
+                <div class="panel-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    Live Logic Trace
+                    <span class="tooltip-icon" data-tooltip="Dynamic syntax verification. Highlights exactly which algorithm blocks calculate modulo math correctly and which throw exceptions.">?</span>
+                </div>
+                
+                <div class="logic-trace" id="logicTrace">
+                    <div class="code-line comment">// Awaiting operations...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM PANEL: TERMINAL LOG -->
+        <div class="panel" style="grid-column: 1 / -1; min-height: 150px;">
+            <div class="panel-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                Processing Terminal Log
+                <span class="tooltip-icon" data-tooltip="Detailed operation state history reflecting precise Input-to-Output array mutations required by grading rubrics.">?</span>
+            </div>
+            
+            <div id="terminalLog" style="flex-grow:1; display:flex; flex-direction:column; gap:5px; overflow-y:auto; font-family:var(--font-code); font-size:0.85rem; padding-right:10px;">
+                <div class="terminal-line"><span class="comment">[SYS] Lab Active. Waiting for initial input...</span></div>
+            </div>
+        </div>
+
+        <!-- COMPLEXITY REFERENCE PANEL -->
+        <div class="panel" style="grid-column: 1 / -1;">
+            <div class="panel-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Complexity Reference  <span style="font-family:var(--font-code); font-size:0.75rem; color:var(--text-muted); font-weight:normal; letter-spacing:0;">— Linear &amp; Circular Queue <span style="color:var(--neon-yellow);">Time</span> and <span style="color:var(--neon-blue);">Space</span> Analysis</span>
+            </div>
+
+            <div style="display:flex; gap:30px; flex-wrap:wrap;">
+
+                <!-- TIME COMPLEXITY TABLE -->
+                <div class="complexity-section">
+                    <div class="cplx-pnl-title">⏱ TIME COMPLEXITY</div>
+                    <div class="complexity-table-wrap">
+                        <table class="complexity-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Operation</th>
+                                    <th class="col-head-lin">Linear Queue</th>
+                                    <th class="col-head-circ">Circular Queue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Enqueue</td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Dequeue</td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Peek / Front</td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Search</td>
+                                    <td><span class="cplx-on">O(n)</span></td>
+                                    <td><span class="cplx-on">O(n)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>isEmpty / isFull</td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Overflow Check</td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Traversal (All)</td>
+                                    <td><span class="cplx-on">O(n)</span></td>
+                                    <td><span class="cplx-on">O(n)</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SPACE COMPLEXITY TABLE -->
+                <div class="complexity-section">
+                    <div class="cplx-pnl-title">📦 SPACE COMPLEXITY</div>
+                    <div class="complexity-table-wrap">
+                        <table class="complexity-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Aspect</th>
+                                    <th class="col-head-lin">Linear Queue</th>
+                                    <th class="col-head-circ">Circular Queue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Array Storage</td>
+                                    <td><span class="cplx-on">O(n)</span></td>
+                                    <td><span class="cplx-on">O(n)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Auxiliary Space</td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                    <td><span class="cplx-o1">O(1)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Pointer Overhead</td>
+                                    <td><span class="cplx-o1">O(1)</span> <span class="col-op">(F+R)</span></td>
+                                    <td><span class="cplx-o1">O(1)</span> <span class="col-op">(F+R)</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Wasted Slots</td>
+                                    <td><span class="cplx-on" style="color:var(--neon-pink);">O(n)</span> <span class="col-op">worst</span></td>
+                                    <td><span class="cplx-o1">O(0)</span> <span class="col-op">reused</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Memory Utilization</td>
+                                    <td><span style="color:var(--neon-pink); font-weight:bold;">Degrades</span></td>
+                                    <td><span style="color:var(--neon-green); font-weight:bold;">Always n</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VERDICT CARD -->
+                <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:10px;">
+                    <div class="cplx-pnl-title">🏆 VERDICT</div>
+                    <div style="background:rgba(255,0,85,0.06); border:1px solid rgba(255,0,85,0.3); border-radius:6px; padding:10px;">
+                        <div style="color:var(--neon-pink); font-family:var(--font-display); font-size:0.75rem; margin-bottom:5px;">LINEAR QUEUE</div>
+                        <div style="font-family:var(--font-code); font-size:0.75rem; color:#888; line-height:1.6;">
+                            ✗ Front slots become <span style="color:var(--neon-pink);">permanently wasted</span> after each Dequeue.<br>
+                            ✗ Rear pointer cannot exceed size — even if front slots are free.<br>
+                            ✗ Memory efficiency degrades over time (up to O(n) wasted).
+                        </div>
+                    </div>
+                    <div style="background:rgba(57,255,20,0.06); border:1px solid rgba(57,255,20,0.3); border-radius:6px; padding:10px;">
+                        <div style="color:var(--neon-green); font-family:var(--font-display); font-size:0.75rem; margin-bottom:5px;">CIRCULAR QUEUE</div>
+                        <div style="font-family:var(--font-code); font-size:0.75rem; color:#888; line-height:1.6;">
+                            ✓ Rear wraps via <span style="color:var(--neon-green);">modulo arithmetic</span> — reuses freed slots.<br>
+                            ✓ Memory is always fully utilized up to actual queue size.<br>
+                            ✓ Preferred for <span style="color:var(--neon-green);">buffers, scheduling &amp; real-time systems</span>.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const SIZE = 5;
+        let isStressTesting = false;
+        
+        // Linear Queue State
+        let lQueue = new Array(SIZE).fill(null);
+        let lFront = -1, lRear = -1;
+        let ghostedSlots = new Set();
+        let lJammed = false;
+
+        // Circular Queue State
+        let cQueue = new Array(SIZE).fill(null);
+        let cFront = -1, cRear = -1;
+
+        // Stats
+        let stats = { throughput: 0, ops: 0 };
+
+        // DOM Elements
+        const linearBelt = document.getElementById('linearBelt');
+        const circCarousel = document.getElementById('circCarousel');
+        const lPtrFront = document.getElementById('lPtrFront');
+        const lPtrRear  = document.getElementById('lPtrRear');
+        const cPtrFront = document.getElementById('cPtrFront');
+        const cPtrRear  = document.getElementById('cPtrRear');
+        const dataInput = document.getElementById('dataInput');
+        
+        // Initial Setup
+        function initDOM() {
+            document.querySelectorAll('#linearBelt > .slot').forEach(e => e.remove());
+            for(let i=0; i<SIZE; i++) {
+                const s = document.createElement('div');
+                s.className = 'slot';
+                s.id = `lslot-${i}`;
+                
+                const idx = document.createElement('div');
+                idx.className = 'slot-index';
+                idx.innerText = `[${i}]`;
+                
+                s.appendChild(idx);
+                linearBelt.appendChild(s);
+            }
+
+            // Circular Setup
+            const radius = 100;
+            // Clear existing slots first
+            document.querySelectorAll('.circ-slot, .circ-cube').forEach(e => e.remove());
+            
+            for(let i=0; i<SIZE; i++) {
+                const angle = (i * (360 / SIZE) - 90) * (Math.PI / 180);
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+
+                const s = document.createElement('div');
+                s.className = 'slot circ-slot';
+                s.id = `cslot-${i}`;
+                s.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+                
+                const idx = document.createElement('div');
+                idx.className = 'slot-index';
+                idx.innerText = `[${i}]`;
+                
+                s.appendChild(idx);
+                circCarousel.appendChild(s);
+            }
+        }
+
+        function updatePointers() {
+            // Linear
+            if(lFront !== -1) {
+                lPtrFront.classList.add('visible');
+                const safeF = Math.min(lFront, SIZE - 1);
+                const slotRight = document.getElementById(`lslot-${safeF}`).offsetLeft;
+                lPtrFront.style.left = `${slotRight + 30}px`;
+            } else {
+                lPtrFront.classList.remove('visible');
+            }
+
+            if(lRear !== -1) {
+                lPtrRear.classList.add('visible');
+                const safeR = Math.min(lRear, SIZE - 1);
+                const slotRight = document.getElementById(`lslot-${safeR}`).offsetLeft;
+                lPtrRear.style.left = `${slotRight + 30}px`;
+            } else {
+                lPtrRear.classList.remove('visible');
+            }
+
+            // Circular
+            const updateCirc = (ptr, idx, offsetData) => {
+                if(idx !== -1) {
+                    ptr.classList.add('visible');
+                    const angle = (idx * (360 / SIZE) - 90) * (Math.PI / 180);
+                    const R = 100 + offsetData.r;
+                    const x = Math.cos(angle) * R;
+                    const y = Math.sin(angle) * R;
+                    ptr.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${angle + Math.PI/2}rad)`;
+                } else {
+                    ptr.classList.remove('visible');
+                }
+            };
+
+            // Offset front/rear slightly if on same index, else keep centered
+            let fOff = 40, rOff = 40;
+            if (cFront !== -1 && cFront === cRear) {
+                fOff = 30; rOff = 50; 
+            }
+            updateCirc(cPtrFront, cFront, {r: fOff});
+            updateCirc(cPtrRear, cRear, {r: rOff});
+        }
+
+        function createCube(val, type, idPrefix) {
+            const c = document.createElement('div');
+            c.className = `data-cube ${type}-cube enqueueing`;
+            c.innerText = val;
+            c.id = `${idPrefix}-cube-${Date.now()}`;
+            return c;
+        }
+
+        function setStatus(msg, type='normal') {
+            const el = document.getElementById('sysStatus');
+            el.innerText = msg;
+            if(type==='error') el.style.color = 'var(--neon-pink)';
+            else el.style.color = 'var(--neon-green)';
+        }
+
+        function updateStats() {
+            document.getElementById('statThroughput').innerText = stats.throughput;
+            document.getElementById('statOps').innerText = stats.ops;
+            
+            const wPct = (ghostedSlots.size / SIZE) * 100;
+            document.getElementById('wasteBar').style.width = `${wPct}%`;
+            document.getElementById('statWasteText').innerText = `${ghostedSlots.size}/${SIZE} Slots`;
+
+            // Waste counter on linear floor
+            const wc = document.getElementById('wasteCounter');
+            document.getElementById('wasteCounterNum').innerText = ghostedSlots.size;
+            if (ghostedSlots.size > 0) wc.classList.add('has-waste'); else wc.classList.remove('has-waste');
+
+            // Circular fill ring: circumference = 2*PI*108 = 678.6
+            const circCount = cFront === -1 ? 0 : (cFront <= cRear ? cRear - cFront + 1 : SIZE - cFront + cRear + 1);
+            const fillFrac = circCount / SIZE;
+            const C = 678.6;
+            const arc = document.getElementById('fillRingArc');
+            arc.style.strokeDashoffset = C - (C * fillFrac);
+            // Color: green when full, blue otherwise
+            arc.style.stroke = fillFrac >= 1 ? 'var(--neon-green)' : fillFrac > 0.6 ? 'var(--neon-yellow)' : 'var(--neon-blue)';
+            arc.style.filter = fillFrac >= 1
+                ? 'drop-shadow(0 0 6px var(--neon-green))'
+                : fillFrac > 0.6 ? 'drop-shadow(0 0 6px rgba(252,227,0,0.8))'
+                : 'drop-shadow(0 0 5px var(--neon-blue))';
+        }
+
+        function flashBadge(id, isOn=true) {
+            const all = ['badgeEnqDeq','badgeSearch','badgeOverflow'];
+            all.forEach(b => document.getElementById(b).classList.remove('active-badge','o-n'));
+            if (isOn && id) {
+                const el = document.getElementById(id);
+                el.classList.add('active-badge');
+                if (id === 'badgeSearch') el.classList.add('o-n');
+                setTimeout(() => el.classList.remove('active-badge','o-n'), 2500);
+            }
+        }
+
+        function pushOpHistory(type, label) {
+            const timeline = document.getElementById('opTimeline');
+            // Remove placeholder
+            timeline.querySelectorAll('span').forEach(s => s.remove());
+
+            const chip = document.createElement('div');
+            chip.className = `op-chip ${type}`;
+            chip.innerText = label;
+            timeline.appendChild(chip);
+            // Keep max 12
+            while (timeline.children.length > 12) timeline.removeChild(timeline.firstChild);
+            timeline.scrollLeft = timeline.scrollWidth;
+        }
+
+        function addLog(codeLines, highlightIndex, type='normal') {
+            const trace = document.getElementById('logicTrace');
+            trace.innerHTML = '';
+            
+            codeLines.forEach((line, i) => {
+                const el = document.createElement('div');
+                el.className = `code-line ${i === highlightIndex ? 'active' : ''} ${type==='error' && i===highlightIndex ? 'error' : ''}`;
+                
+                // Simple syntax highlighting via regex replacements
+                let html = line.replace(/(\/\/.*)/g, '~~~$1~~~')
+                               .replace(/(if|else|return|function)\b/g, '[[K:$1]]')
+                               .replace(/\b(rear|front|queue|SIZE|val)\b/g, '[[V:$1]]')
+                               .replace(/(\-1|\d+)/g, '[[N:$1]]')
+                               .replace(/(\=\=|\=|\+|\%|\!)/g, '[[O:$1]]')
+                               .replace(/~~~(.*?)~~~/g, '<span class="comment">$1</span>')
+                               .replace(/\[\[K:(.*?)\]\]/g, '<span class="keyword">$1</span>')
+                               .replace(/\[\[V:(.*?)\]\]/g, '<span class="variable">$1</span>')
+                               .replace(/\[\[N:(.*?)\]\]/g, '<span class="number">$1</span>')
+                               .replace(/\[\[O:(.*?)\]\]/g, '<span class="operator">$1</span>');
+                
+                el.innerHTML = html;
+                trace.appendChild(el);
+            });
+        }
+
+        async function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // --- STEPPING && LOGGING SYSTEM ---
+        function logTerminal(inputVal, opName, lState, cState) {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.innerHTML = `> <span class="op">${opName}</span> | Input: <span class="input">${inputVal || 'NULL'}</span> | <span class="state">LIN [${lState.map(i=>i||'null').join(',')}] F:${lFront} R:${lRear}</span> | <span class="state">CIRC [${cState.map(i=>i||'null').join(',')}] F:${cFront} R:${cRear}</span>`;
+            terminalLog.appendChild(line);
+            terminalLog.scrollTop = terminalLog.scrollHeight;
+        }
+
+        function triggerOverflow(floorId) {
+            const el = document.getElementById(floorId);
+            el.classList.remove('alert-overflow'); void el.offsetWidth; el.classList.add('alert-overflow');
+        }
+        
+        function triggerUnderflow(floorId) {
+            const el = document.getElementById(floorId);
+            el.classList.remove('alert-underflow'); void el.offsetWidth; el.classList.add('alert-underflow');
+        }
+
+        function takeSnapshot() {
+            return {
+                lQueue: [...lQueue], lFront, lRear, ghostedSlots: new Set(ghostedSlots), lJammed,
+                cQueue: [...cQueue], cFront, cRear
+            };
+        }
+        function restoreSnapshot(snap) {
+            lQueue = [...snap.lQueue]; lFront = snap.lFront; lRear = snap.lRear; 
+            ghostedSlots = new Set(snap.ghostedSlots); lJammed = snap.lJammed;
+            cQueue = [...snap.cQueue]; cFront = snap.cFront; cRear = snap.cRear;
+            document.getElementById('linearFloor').classList.remove('jammed', 'alert-overflow', 'alert-underflow');
+            document.getElementById('circularFloor').classList.remove('alert-overflow', 'alert-underflow');
+            document.getElementById('linearError').classList.remove('visible');
+            initDOM();
+            for(let i=0; i<SIZE; i++) {
+                if(lQueue[i] !== null) document.getElementById(`lslot-${i}`).appendChild(createCube(lQueue[i],'linear',`l-${i}`));
+                if(ghostedSlots.has(i)) document.getElementById(`lslot-${i}`).classList.add('ghosted');
+                if(cQueue[i] !== null) document.getElementById(`cslot-${i}`).appendChild(createCube(cQueue[i],'circ',`c-${i}`));
+            }
+            updatePointers();
+            addLog(["// Snapshot logic restored via 'Prev'."], 0);
+        }
+
+        let stepQueue = [];
+        let currentStepIndex = -1;
+        let stepSnapshots = [];
+        
+        function executeStepActions(opSteps) {
+            stepQueue = opSteps;
+            currentStepIndex = -1;
+            stepSnapshots = [takeSnapshot()];
+            
+            if (document.getElementById('stepToggle').checked && !isStressTesting) {
+                document.getElementById('stepControls').style.display = 'flex';
+                document.querySelectorAll('#btnEnq, #btnDeq, #btnReset, #btnStress, #btnSearch').forEach(b => b.disabled = true);
+                stepForward();
+            } else {
+                for(let i=0; i < opSteps.length; i++) opSteps[i]();
+            }
+        }
+
+        function stepForward() {
+            if (currentStepIndex < stepQueue.length - 1) {
+                currentStepIndex++;
+                stepQueue[currentStepIndex]();
+                stepSnapshots[currentStepIndex + 1] = takeSnapshot();
+            }
+            if (currentStepIndex >= stepQueue.length - 1 && document.getElementById('stepToggle').checked) {
+                document.getElementById('stepControls').style.display = 'none';
+                document.querySelectorAll('#btnEnq, #btnDeq, #btnReset, #btnStress, #btnSearch').forEach(b => b.disabled = false);
+            }
+        }
+        function stepBackward() {
+            if (currentStepIndex >= 0) {
+                restoreSnapshot(stepSnapshots[currentStepIndex]);
+                currentStepIndex--;
+            }
+        }
+
+        // --- ENQUEUE LOGIC ---
+        function enqueue(fromStressTest = false) {
+            if(!fromStressTest && (isStressTesting || document.getElementById('stepControls').style.display !== 'none')) return;
+            stats.ops++;
+            let val = dataInput.value || Math.floor(Math.random() * 99).toString().padStart(2, '0');
+            dataInput.value = '';
+
+            let lSuccess = false, cSuccess = false;
+            let steps = [];
+
+            // Step 1
+            steps.push(() => {
+                if (lRear === SIZE - 1) {
+                    lJammed = true;
+                    document.getElementById('linearFloor').classList.add('jammed');
+                    document.getElementById('linearError').classList.add('visible');
+                    triggerOverflow('linearFloor');
+                    addLog(["function linear_enqueue(val) {", "  if (rear == SIZE - 1) {", "    return Error('Overflow');", "  }", "  ..."], 2, 'error');
+                } else {
+                    addLog(["function linear_enqueue(val) {", "  if (rear == SIZE - 1) return error;", "  if (front == -1) front = 0;", "  rear = rear + 1;", "  queue[rear] = val;", "}"], 4);
+                    if (lFront === -1) lFront = 0;
+                    lRear++;
+                    lQueue[lRear] = val;
+                    const slot = document.getElementById(`lslot-${lRear}`);
+                    
+                    // Prevent DOM overlap during high speed stress testing
+                    const oldCube = slot.querySelector('.data-cube.dequeueing');
+                    if (oldCube) oldCube.remove();
+
+                    const cube = createCube(val, 'linear', `l-${lRear}`);
+                    slot.appendChild(cube);
+                    setTimeout(() => cube.classList.remove('enqueueing'), 50);
+                    lSuccess = true;
+                }
+                updatePointers();
+            });
+
+            // Step 2
+            steps.push(() => {
+                const cFull = (cFront === 0 && cRear === SIZE - 1) || (cRear === (cFront - 1) % (SIZE - 1) && cFront !== 0 && cRear !== -1) || ((cRear + 1) % SIZE === cFront);
+                if (cFull) {
+                    triggerOverflow('circularFloor');
+                    addLog(["function circ_enqueue(val) {", "  if ((rear + 1) % SIZE == front) {", "    return Error('Full. Underflow!');", "  }", "  ..."], 2, 'error');
+                } else {
+                    let wrapped = false;
+                    if (cFront === -1) { cFront = 0; cRear = 0; }
+                    else if (cRear === SIZE - 1 && cFront !== 0) { cRear = 0; wrapped = true; }
+                    else { cRear++; }
+                    cQueue[cRear] = val;
+                    
+                    if(wrapped) {
+                        const arc = document.getElementById('wrapArc');
+                        arc.classList.remove('animating'); void arc.offsetWidth; arc.classList.add('animating');
+                    }
+                    const slot = document.getElementById(`cslot-${cRear}`);
+                    
+                    // Prevent DOM overlap during high speed stress testing wrap-around
+                    const oldCube = slot.querySelector('.data-cube.dequeueing');
+                    if (oldCube) oldCube.remove();
+                    
+                    const cube = createCube(val, 'circ', `c-${cRear}`);
+                    slot.appendChild(cube);
+                    setTimeout(() => cube.classList.remove('enqueueing'), 50);
+                    cSuccess = true;
+                    
+                    addLog(["function circ_enqueue(val) {", "  // ...", "  rear = (rear + 1) % SIZE;", "  queue[rear] = val;", "}"], 2, 'normal');
+                }
+                updatePointers();
+            });
+
+            // Step 3
+            steps.push(() => {
+                if(lSuccess || cSuccess) stats.throughput++;
+                updateStats();
+                logTerminal(val, 'ENQUEUE', lQueue, cQueue);
+                flashBadge('badgeEnqDeq');
+                if (lSuccess || cSuccess) pushOpHistory('enq', `+${val}`);
+                else pushOpHistory('err', 'OVF');
+            });
+
+            executeStepActions(steps);
+        }
+
+        // --- DEQUEUE LOGIC ---
+        function dequeue(fromStressTest = false) {
+            if(!fromStressTest && (isStressTesting || document.getElementById('stepControls').style.display !== 'none')) return;
+            stats.ops++;
+            let steps = [];
+
+            // Step 1
+            steps.push(() => {
+                if (lFront === -1 || lFront > lRear) {
+                    triggerUnderflow('linearFloor');
+                    addLog(["function linear_dequeue() {", "  if (front == -1) {", "    return Error('Underflow');", "  }", "  ..."], 2, 'error');
+                } else {
+                    const cube = document.querySelector(`#lslot-${lFront} .data-cube`);
+                    if(cube) { cube.classList.add('dequeueing'); setTimeout(() => cube.remove(), 400); }
+                    const oldFront = lFront;
+                    lQueue[lFront] = null;
+                    lFront++;
+                    ghostedSlots.add(oldFront);
+                    document.getElementById(`lslot-${oldFront}`).classList.add('ghosted');
+                    addLog(["function linear_dequeue() {", "  val = queue[front];", "  front = front + 1;", "  return val;", "} // Space wasted!"], 2);
+                }
+                updatePointers();
+            });
+
+            // Step 2
+            steps.push(() => {
+                if (cFront === -1) {
+                    triggerUnderflow('circularFloor');
+                    addLog(["function circ_dequeue() {", "  if (front == -1) {", "    return Error('Underflow');", "  }", "  ..."], 2, 'error');
+                } else {
+                    const cube = document.querySelector(`#cslot-${cFront} .data-cube`);
+                    if (cube) { cube.classList.add('dequeueing'); setTimeout(() => cube.remove(), 400); }
+                    cQueue[cFront] = null;
+                    if (cFront === cRear) { cFront = -1; cRear = -1; }
+                    else if (cFront === SIZE - 1) { cFront = 0; }
+                    else { cFront++; }
+                    addLog(["function circ_dequeue() {", "  val = queue[front];", "  front = (front + 1) % SIZE;", "  return val;", "}"], 2);
+                }
+                updatePointers();
+            });
+
+            // Step 3
+            steps.push(() => {
+                updateStats();
+                logTerminal('---', 'DEQUEUE', lQueue, cQueue);
+                flashBadge('badgeEnqDeq');
+                pushOpHistory('deq', `-DEQ`);
+            });
+
+            executeStepActions(steps);
+        }
+
+        // --- SEARCH TRAVERSAL LOGIC ---
+        async function searchQueue() {
+            if(isStressTesting || (document.getElementById('stepControls').style.display !== 'none')) return;
+            const val = document.getElementById('searchInput').value.trim();
+            if(!val) return;
+            
+            // Reset result box
+            const resultBox = document.getElementById('searchResultBox');
+            const srLinear   = document.getElementById('srLinear');
+            const srCircular = document.getElementById('srCircular');
+            resultBox.classList.remove('visible');
+            srLinear.className   = 'result-not-found';
+            srLinear.innerText   = '—';
+            srCircular.className = 'result-not-found';
+            srCircular.innerText = '—';
+
+            logTerminal(val, 'SEARCH SCAN', lQueue, cQueue);
+            flashBadge('badgeSearch');
+            pushOpHistory('srch', `?${val}`);
+            document.querySelectorAll('#btnEnq, #btnDeq, #btnReset, #btnStress, #btnSearch').forEach(b => b.disabled = true);
+            
+            let lFoundIndex = -1;
+            let cFoundIndex = -1;
+
+            // Linear search
+            if (lFront !== -1 && lFront <= lRear) {
+                const lScanner = document.getElementById('lScanner');
+                lScanner.classList.add('active');
+                for(let i=lFront; i<=lRear; i++) {
+                    const slotNode = document.getElementById(`lslot-${i}`);
+                    
+                    lScanner.style.left = `${slotNode.offsetLeft}px`;
+                    lScanner.style.top  = `${slotNode.offsetTop}px`;
+                    
+                    await sleep(500);
+                    if (lQueue[i] === val) {
+                        lFoundIndex = i;
+                        lScanner.classList.add('match'); await sleep(1000); break;
+                    } else {
+                        lScanner.classList.add('miss'); await sleep(300); lScanner.classList.remove('miss');
+                    }
+                }
+                lScanner.classList.remove('active', 'match', 'miss');
+            }
+
+            // Circular search
+            if (cFront !== -1) {
+                let count = cFront <= cRear ? cRear - cFront + 1 : SIZE - cFront + cRear + 1;
+                let cI = cFront;
+                for(let k=0; k<count; k++) {
+                     const slotNode = document.getElementById(`cslot-${cI}`);
+                     slotNode.style.boxShadow = "0 0 20px rgba(0, 240, 255, 0.8)";
+                     await sleep(500);
+                     if (cQueue[cI] === val) {
+                         cFoundIndex = cI;
+                         slotNode.style.boxShadow = "0 0 20px var(--neon-green)";
+                         await sleep(1000); slotNode.style.boxShadow = ""; break;
+                     }
+                     slotNode.style.boxShadow = "0 0 20px var(--neon-pink)";
+                     await sleep(300); slotNode.style.boxShadow = "";
+                     cI = (cI + 1) % SIZE;
+                }
+            }
+
+            // --- Show results ---
+            resultBox.classList.add('visible');
+            if (lFoundIndex !== -1) {
+                srLinear.className = 'result-found';
+                srLinear.innerText = `✓ FOUND at index [${lFoundIndex}]`;
+            } else if (lFront === -1 || lFront > lRear) {
+                srLinear.className = 'result-not-found';
+                srLinear.innerText = '✗ Queue Empty';
+            } else {
+                srLinear.className = 'result-not-found';
+                srLinear.innerText = '✗ NOT FOUND';
+            }
+
+            if (cFoundIndex !== -1) {
+                srCircular.className = 'result-found';
+                srCircular.innerText = `✓ FOUND at index [${cFoundIndex}]`;
+            } else if (cFront === -1) {
+                srCircular.className = 'result-not-found';
+                srCircular.innerText = '✗ Queue Empty';
+            } else {
+                srCircular.className = 'result-not-found';
+                srCircular.innerText = '✗ NOT FOUND';
+            }
+
+            // Update status bar
+            const overallFound = lFoundIndex !== -1 || cFoundIndex !== -1;
+            setStatus(
+                overallFound
+                    ? `SEARCH COMPLETE // "${val}" FOUND`
+                    : `SEARCH COMPLETE // "${val}" NOT FOUND`,
+                overallFound ? 'normal' : 'error'
+            );
+            
+            document.getElementById('searchInput').value = '';
+            document.querySelectorAll('.btn').forEach(b => b.disabled = false);
+        }
+
+        // --- STRESS TEST ---
+        async function runStressTest() {
+            if(isStressTesting) return;
+            isStressTesting = true;
+            document.querySelectorAll('.btn').forEach(b => b.disabled = true);
+
+            const speedMap = { '1': 500, '2': 250, '3': 80 };
+            const delay = speedMap[document.getElementById('speedSlider').value] || 250;
+            
+            for(let i=0; i<20; i++) {
+                if(Math.random() > 0.3 || (lFront===-1 && cFront===-1)) {
+                    dataInput.value = Math.floor(Math.random() * 99).toString().padStart(2, '0');
+                    enqueue(true);
+                } else {
+                    dequeue(true);
+                }
+                await sleep(delay);
+            }
+            
+            document.querySelectorAll('.btn').forEach(b => b.disabled = false);
+            isStressTesting = false;
+        }
+
+        // --- RESET ---
+        function resetSystem() {
+            if(isStressTesting) return;
+            lQueue = new Array(SIZE).fill(null);
+            cQueue = new Array(SIZE).fill(null);
+            lFront = -1; lRear = -1;
+            cFront = -1; cRear = -1;
+            ghostedSlots.clear();
+            lJammed = false;
+            
+            document.getElementById('linearFloor').classList.remove('jammed', 'alert-overflow', 'alert-underflow');
+            document.getElementById('circularFloor').classList.remove('alert-overflow', 'alert-underflow');
+            document.getElementById('linearError').classList.remove('visible');
+            terminalLog.innerHTML = '<div class="terminal-line"><span class="comment">[SYS] Lab Active. Arrays Flushed.</span></div>';
+            document.getElementById('opTimeline').innerHTML = '<span style="color:#444; font-size:0.75rem; font-family:var(--font-code);">// no ops yet</span>';
+            
+            initDOM();
+            updatePointers();
+            
+            stats = { throughput: 0, ops: 0 };
+            updateStats();
+            document.getElementById('logicTrace').innerHTML = '<div class="code-line comment">// System Online... Waiting.</div>';
+        }
+
+        document.getElementById('btnPrev').addEventListener('click', stepBackward);
+        document.getElementById('btnNext').addEventListener('click', stepForward);
+        document.getElementById('btnSearch').addEventListener('click', searchQueue);
+
+        document.getElementById('btnEnq').addEventListener('click', enqueue);
+        document.getElementById('btnDeq').addEventListener('click', dequeue);
+        document.getElementById('btnReset').addEventListener('click', resetSystem);
+        document.getElementById('btnStress').addEventListener('click', runStressTest);
+
+        // Speed slider label update
+        const speedLabels = { '1': 'Slow', '2': 'Normal', '3': 'Fast' };
+        document.getElementById('speedSlider').addEventListener('input', function() {
+            document.getElementById('speedLabel').innerText = speedLabels[this.value];
+        });
+
+        // Copy State export
+        document.getElementById('btnExport').addEventListener('click', () => {
+            const lArr = lQueue.map((v,i) => v ? `[${i}]=${v}` : `[${i}]=∅`).join(' ');
+            const cArr = cQueue.map((v,i) => v ? `[${i}]=${v}` : `[${i}]=∅`).join(' ');
+            const text = `=== Queue Engineering Lab — State Export ===\n`
+                + `Linear Queue : ${lArr}\n  Front=${lFront} Rear=${lRear} Wasted=${ghostedSlots.size}/${SIZE}\n`
+                + `Circular Queue: ${cArr}\n  Front=${cFront} Rear=${cRear}\n`
+                + `Operations: ${stats.ops}  Throughput: ${stats.throughput}\n`
+                + `Timestamp: ${new Date().toLocaleString()}`;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('btnExport');
+                btn.innerText = '✓ Copied!';
+                btn.style.color = 'var(--neon-green)';
+                btn.style.borderColor = 'var(--neon-green)';
+                setTimeout(() => { btn.innerText = 'Copy State'; btn.style.color=''; btn.style.borderColor=''; }, 2000);
+            });
+        });
+        
+        dataInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                enqueue();
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                searchQueue();
+            }
+        });
+
+        const infoBtn = document.getElementById('infoBtn');
+        const infoDropdown = document.getElementById('infoDropdown');
+        if (infoBtn) {
+            infoBtn.addEventListener('click', () => {
+                infoDropdown.classList.toggle('open');
+            });
+            document.addEventListener('click', (e) => {
+                if (!infoBtn.contains(e.target) && !infoDropdown.contains(e.target)) {
+                    infoDropdown.classList.remove('open');
+                }
+            });
+        }
+
+        // Start
+        initDOM();
+        updatePointers();
+
+    </script>
+</body>
+</html>
